@@ -20,14 +20,14 @@ jobs:
         dotnet-version: 8.0.x
 
     - name: Restore dependencies
-      run: dotnet restore "GangasiriTeaFactoryBilling/GangasiriTeaFactoryBilling.csproj"
+      run: dotnet restore "GangasiriTeaFactoryBilling.csproj"
 
     - name: Build
-      run: dotnet build "GangasiriTeaFactoryBilling/GangasiriTeaFactoryBilling.csproj" --configuration Release --no-restore
+      run: dotnet build "GangasiriTeaFactoryBilling.csproj" --configuration Release --no-restore
 
     - name: Create Zip Archive
       run: |
-        Compress-Archive -Path "GangasiriTeaFactoryBilling/bin/Release/net8.0-windows/*" -DestinationPath "GangasiriTeaFactoryBilling.zip"
+        Compress-Archive -Path "bin/Release/net8.0-windows/*" -DestinationPath "GangasiriTeaFactoryBilling.zip"
 
     - name: Create Release
       id: create_release
