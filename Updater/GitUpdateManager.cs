@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
@@ -14,16 +15,15 @@ namespace GangasiriTeaFactoryBilling.Updater
     {
         private const string RepoOwner = "SeranMN";
         private const string RepoName = "GangasiriTeaFactoryBilling";
-        
-        // Check for updates
+        private const string GitHubToken = ""; // Paste your Fine-grained Token here
+
         public static async Task CheckForUpdates()
         {
             try
             {
                 using (HttpClient client = new HttpClient())
                 {
-                    client.Timeout = TimeSpan.FromSeconds(10);
-                    client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("GangasiriTeaFactoryApp", "1.0"));
+                    ConfigureHttpClient(client);
 
                     string url = $"https://api.github.com/repos/{RepoOwner}/{RepoName}/releases/latest";
                     var response = await client.GetAsync(url);
@@ -36,46 +36,35 @@ namespace GangasiriTeaFactoryBilling.Updater
                             JsonElement root = doc.RootElement;
                             if (root.TryGetProperty("tag_name", out JsonElement tagElement))
                             {
-                                string tagName = tagElement.GetString(); // e.g., "v1.0.42"
-                                
-                                // Parse version from tag (remove 'v' prefix if present)
+                                string tagName = tagElement.GetString();
                                 string versionStr = tagName.TrimStart('v');
                                 
                                 if (Version.TryParse(versionStr, out Version latestVersion))
                                 {
                                     Version currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
-                                    // Use a simpler comparison or default to 1.0.0.0 if assembly version is not set properly
                                     if (currentVersion == null) currentVersion = new Version(1, 0, 0, 0);
 
-                                    // Check if latest version is greater
                                     if (latestVersion > currentVersion)
                                     {
                                         DialogResult result = MessageBox.Show(
-                                            $"A new update is available!\n\nCurrent Version: {currentVersion}\nNew Version: {latestVersion}\n\nDo you want to update now?",
+                                            $"A new update is available!\n\nCurrent Version: {currentVersion}\nNew Version: {latestVersion}\n\n" +
+                                            "The application will close, download the update, and restart automatically.\n\n" +
+                                            "Do you want to update now?",
                                             "Update Available",
                                             MessageBoxButtons.YesNo,
                                             MessageBoxIcon.Information);
 
                                         if (result == DialogResult.Yes)
                                         {
-                                            // Get browser download URL for the asset (zip)
-                                            string downloadUrl = "";
-                                            if (root.TryGetProperty("assets", out JsonElement assets) && assets.GetArrayLength() > 0)
+                                            string assetUrl = GetAssetUrl(root);
+                                            if (!string.IsNullOrEmpty(assetUrl))
                                             {
-                                                 // Assuming the first asset is the zip
-                                                 downloadUrl = assets[0].GetProperty("browser_download_url").GetString();
+                                                await PerformUpdate(assetUrl);
                                             }
                                             else
                                             {
-                                                downloadUrl = root.GetProperty("html_url").GetString(); // Fallback to release page
+                                                MessageBox.Show("Could not find a valid update asset (zip file).", "Update Error");
                                             }
-
-                                            // Open download link
-                                            Process.Start(new ProcessStartInfo
-                                            {
-                                                FileName = downloadUrl,
-                                                UseShellExecute = true
-                                            });
                                         }
                                     }
                                 }
@@ -86,7 +75,105 @@ namespace GangasiriTeaFactoryBilling.Updater
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Auto-Update Check Failed: {ex.Message}");
+                MessageBox.Show($"Update Check Failed: {ex.Message}", "Error");
+            }
+        }
+
+        private static void ConfigureHttpClient(HttpClient client)
+        {
+            client.Timeout = TimeSpan.FromSeconds(300); // 5 mins for download
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("GangasiriTeaFactoryApp", "1.0"));
+            if (!string.IsNullOrEmpty(GitHubToken))
+            {
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", GitHubToken);
+            }
+        }
+
+        private static string GetAssetUrl(JsonElement root)
+        {
+            if (root.TryGetProperty("assets", out JsonElement assets) && assets.GetArrayLength() > 0)
+            {
+                // Prefer 'url' (API) for private repos with token, otherwise 'browser_download_url'
+                if (!string.IsNullOrEmpty(GitHubToken))
+                {
+                    return assets[0].GetProperty("url").GetString();
+                }
+                return assets[0].GetProperty("browser_download_url").GetString();
+            }
+            return null;
+        }
+
+        private static async Task PerformUpdate(string assetUrl)
+        {
+            string tempPath = Path.GetTempPath();
+            string zipPath = Path.Combine(tempPath, "update.zip");
+            string extractPath = Path.Combine(tempPath, "GangasiriUpdate_" + DateTime.Now.Ticks);
+
+            try
+            {
+                // 1. Download
+                using (HttpClient client = new HttpClient())
+                {
+                    ConfigureHttpClient(client);
+                    if (!string.IsNullOrEmpty(GitHubToken))
+                    {
+                         // For API asset download
+                         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/octet-stream"));
+                    }
+
+                    // Show a simple loading cursor or form (blocking for now is acceptable for MVP)
+                    Cursor.Current = Cursors.WaitCursor;
+                    var data = await client.GetByteArrayAsync(assetUrl);
+                    await File.WriteAllBytesAsync(zipPath, data);
+                    Cursor.Current = Cursors.Default;
+                }
+
+                // 2. Extract
+                if (Directory.Exists(extractPath)) Directory.Delete(extractPath, true);
+                ZipFile.ExtractToDirectory(zipPath, extractPath);
+
+                // 3. Prepare Updater Script
+                string currentExe = Process.GetCurrentProcess().MainModule.FileName;
+                string currentDir = Path.GetDirectoryName(currentExe);
+                string appName = Path.GetFileName(currentExe);
+
+                string scriptPath = Path.Combine(tempPath, "update.ps1");
+                string script = $@"
+                    param($pidToWait, $sourceDir, $destDir, $exeName)
+                    Write-Host 'Waiting for application to exit...'
+                    try {{
+                        Wait-Process -Id $pidToWait -ErrorAction Stop -Timeout 30
+                    }} catch {{
+                        Write-Warning 'Process did not exit or was not found.'
+                    }}
+                    
+                    Start-Sleep -Seconds 2
+                    Write-Host 'Copying new files...'
+                    Copy-Item -Path ""$sourceDir\*"" -Destination ""$destDir"" -Recurse -Force -ErrorAction Stop
+                    
+                    Write-Host 'Restarting application...'
+                    Start-Process ""$destDir\$exeName""
+                ";
+
+                await File.WriteAllTextAsync(scriptPath, script);
+
+                // 4. Run Script and Exit
+                ProcessStartInfo psi = new ProcessStartInfo
+                {
+                    FileName = "powershell.exe",
+                    Arguments = $"-ExecutionPolicy Bypass -File \"{scriptPath}\" -pidToWait {Process.GetCurrentProcess().Id} -sourceDir \"{extractPath}\" -destDir \"{currentDir}\" -exeName \"{appName}\"",
+                    UseShellExecute = true, // To show the window
+                    WindowStyle = ProcessWindowStyle.Normal
+                };
+
+                Process.Start(psi);
+                Environment.Exit(0);
+
+            }
+            catch (Exception ex)
+            {
+                Cursor.Current = Cursors.Default;
+                MessageBox.Show($"Failed to apply update: {ex.Message}", "Update Error");
             }
         }
     }
