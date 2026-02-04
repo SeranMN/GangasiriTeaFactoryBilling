@@ -50,9 +50,14 @@ namespace GangasiriTeaFactoryBilling
                 BackColor = Color.FromArgb(0, 122, 204)
             };
 
+            var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            
+            // Set Form Title (for Taskbar)
+            this.Text = $"Gangasiri Tea Factory Billing v{version}";
+
             Label titleLabel = new Label
             {
-                Text = "GTF Tea Collection",
+                Text = $"GTF Tea Collection v{version}",
                 Font = new Font("Segoe UI", 16, FontStyle.Bold),
                 ForeColor = Color.White,
                 Dock = DockStyle.Left,
