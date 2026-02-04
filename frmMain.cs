@@ -57,7 +57,7 @@ namespace GangasiriTeaFactoryBilling
 
             Label titleLabel = new Label
             {
-                Text = $"GTF Tea Collection v{version}",
+                Text = $"GTF Tea Collection",
                 Font = new Font("Segoe UI", 16, FontStyle.Bold),
                 ForeColor = Color.White,
                 Dock = DockStyle.Left,
