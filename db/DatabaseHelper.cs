@@ -126,7 +126,7 @@ namespace GangasiriTeaFactoryBilling.db
             // Lines Table
             string createLinesTable = @"
                 CREATE TABLE IF NOT EXISTS Lines (
-                    LineID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    LineID TEXT PRIMARY KEY,
                     LineName TEXT NOT NULL,
                     Description TEXT,
                     TransportFee REAL DEFAULT 0,
@@ -141,9 +141,9 @@ namespace GangasiriTeaFactoryBilling.db
                     SupplierNumber TEXT UNIQUE NOT NULL,
                     SupplierName TEXT NOT NULL,
                     Telephone TEXT,
-                    LineID INTEGER,
+                    LineID TEXT,
                     Address TEXT,
-                    DueAmount REAL DEFAULT 0,
+                    DueAmount INTEGER DEFAULT 0,
                     Status TEXT DEFAULT 'Active',
                     CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (LineID) REFERENCES Lines(LineID) ON DELETE SET NULL
@@ -167,14 +167,13 @@ namespace GangasiriTeaFactoryBilling.db
                     SupplierID INTEGER NOT NULL,
                     CollectionDate DATE NOT NULL,
                     Weight REAL NOT NULL,
-                    RateID INTEGER,
-                    IsTransportAdd INTEGER DEFAULT 0,
+                    Rate INTEGER,
+                    IsTransportAdd TEXT DEFAULT 'No',
                     TotalAmount REAL NOT NULL,
                     Notes TEXT,
                     Status TEXT DEFAULT 'Active',
                     CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (SupplierID) REFERENCES Suppliers(SupplierID) ON DELETE CASCADE,
-                    FOREIGN KEY (RateID) REFERENCES TeaRates(RateID) ON DELETE SET NULL
+                    FOREIGN KEY (SupplierID) REFERENCES Suppliers(SupplierID) ON DELETE CASCADE
                 );";
 
             // Advances Table
@@ -194,11 +193,12 @@ namespace GangasiriTeaFactoryBilling.db
             // Monthly Invoices Table
             string createInvoicesTable = @"
                 CREATE TABLE IF NOT EXISTS MonthlyInvoices (
-                    InvoiceID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    InvoiceID TEXT PRIMARY KEY,
                     SupplierID INTEGER NOT NULL,
                     InvoiceMonth TEXT NOT NULL,
                     Year INTEGER,
                     TotalWeight REAL,
+                    TotalTea REAL,
                     RatePerKg REAL,
                     TransportAllowance REAL,
                     TransportFee REAL,
@@ -215,14 +215,13 @@ namespace GangasiriTeaFactoryBilling.db
             //Tea Pcket Sell
 
             string createTeaPacketTable = @"CREATE TABLE IF NOT EXISTS TeaPacketSell (
-	                                        SellId	INTEGER,
-	                                        SupplierID	INTEGER,
+	                                        SellId	INTEGER PRIMARY KEY AUTOINCREMENT,
+	                                        Supplier	INTEGER,
 	                                        Price	REAL,
 	                                        Qty	INTEGER,
 	                                        Total	REAL,
 	                                        Date	TEXT,
-	                                        PRIMARY KEY(SellId AUTOINCREMENT),
-	                                        CONSTRAINT ""FK"" FOREIGN KEY(SupplierID) REFERENCES Suppliers(SupplierID)
+	                                        FOREIGN KEY(Supplier) REFERENCES Suppliers(SupplierID)
                                             );";
 
             // Users, System Settings, and Audit Logs Tables
@@ -370,6 +369,14 @@ namespace GangasiriTeaFactoryBilling.db
                         cmd.Parameters.AddWithValue("@role", "Admin");
                         cmd.ExecuteNonQuery();
                         Console.WriteLine("Default admin user created.");
+
+                        // Create sample standard user
+                        cmd.CommandText = "INSERT INTO Users (Username, Password, Role) VALUES (@usernameUser, @passwordUser, @roleUser)";
+                        cmd.Parameters.AddWithValue("@usernameUser", "user");
+                        cmd.Parameters.AddWithValue("@passwordUser", "user123");
+                        cmd.Parameters.AddWithValue("@roleUser", "User");
+                        cmd.ExecuteNonQuery();
+                        Console.WriteLine("Default standard user created.");
                     }
                 }
             }

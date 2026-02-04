@@ -4,7 +4,7 @@
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "Seran"
 #define MyAppURL "https://example.com"
-#define MyAppExeName "GTFBilling.exe"
+#define MyAppExeName "GangasiriTeaFactoryBilling.exe"
 #define MySourceDir "D:\GangaSiri Tea Factory Billing\GangasiriTeaFactoryBilling\bin\Release\net8.0-windows\publish\win-x64"
 
 [Setup]
