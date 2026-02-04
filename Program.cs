@@ -58,23 +58,20 @@ namespace GangasiriTeaFactoryBilling
         {
             QuestPDF.Settings.License = LicenseType.Community;
             string appBaseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            string regularFontPath = Path.Combine(appBaseDirectory, "Fonts/static", "NotoSansSinhala-Regular.ttf");
-            string boldFontPath = Path.Combine(appBaseDirectory, "Fonts/static", "NotoSansSinhala-Bold.ttf");
-            if (File.Exists(regularFontPath))
+            string fontPath = Path.Combine(appBaseDirectory, "Fonts", "NotoSansSinhala-VariableFont_wdth,wght.ttf");
+
+            if (File.Exists(fontPath))
             {
-                FontManager.RegisterFont(File.OpenRead(regularFontPath));
+                // Register the font
+                using (var stream = File.OpenRead(fontPath))
+                {
+                    FontManager.RegisterFont(stream);
+                }
             }
             else
             {
-                MessageBox.Show($"Font not found at: {regularFontPath}", "Font Not Found", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-            if (File.Exists(boldFontPath))
-            {
-                FontManager.RegisterFont(File.OpenRead(boldFontPath));
-            }
-            else
-            {
-                MessageBox.Show($"Font not found at: {boldFontPath}", "Font Not Found", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                // Fallback check for other common names or locations if needed, or just error
+                MessageBox.Show($"Font not found at: {fontPath}", "Font Not Found", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
     }
