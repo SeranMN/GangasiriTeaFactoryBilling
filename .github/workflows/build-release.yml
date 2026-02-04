@@ -23,7 +23,9 @@ jobs:
       run: dotnet restore "GangasiriTeaFactoryBilling.csproj"
 
     - name: Build
-      run: dotnet build "GangasiriTeaFactoryBilling.csproj" --configuration Release --no-restore
+      run: |
+        $version = "${{ github.ref_name }}".TrimStart('v')
+        dotnet build "GangasiriTeaFactoryBilling.csproj" --configuration Release --no-restore /p:AssemblyVersion=$version /p:FileVersion=$version /p:Version=$version
 
     - name: Create Zip Archive
       run: |
