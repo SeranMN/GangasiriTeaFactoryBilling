@@ -14,7 +14,8 @@ namespace GangasiriTeaFactoryBilling.Updater
     {
         private const string RepoOwner = "SeranMN";
         private const string RepoName = "GangasiriTeaFactoryBilling";
-        
+        private const string GitHubToken = ""; // Paste your Fine-grained Token here
+
         // Check for updates
         public static async Task CheckForUpdates()
         {
@@ -24,6 +25,11 @@ namespace GangasiriTeaFactoryBilling.Updater
                 {
                     client.Timeout = TimeSpan.FromSeconds(10);
                     client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("GangasiriTeaFactoryApp", "1.0"));
+                    
+                    if (!string.IsNullOrEmpty(GitHubToken))
+                    {
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", GitHubToken);
+                    }
 
                     string url = $"https://api.github.com/repos/{RepoOwner}/{RepoName}/releases/latest";
                     var response = await client.GetAsync(url);
