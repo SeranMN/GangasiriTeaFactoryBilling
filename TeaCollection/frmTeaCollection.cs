@@ -1,4 +1,6 @@
-﻿using System;
+﻿using GangasiriTeaFactoryBilling.db;
+using GangasiriTeaFactoryBilling.Models;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -15,34 +17,53 @@ namespace GangasiriTeaFactoryBilling.TeaCollection
         public frmTeaCollection()
         {
             InitializeComponent();
+            LoadCollections();
+            LoadFilterSuppliers();
         }
 
-        private void LoadSampleData()
-        {
-            collectionGrid.Rows.Clear();
-            collectionGrid.Rows.Add("COL-001", "S-001 - Kamal Perera", "2024-11-25", "125.50", "85.00", "150.00", "10,817.50", "Morning collection");
-            collectionGrid.Rows.Add("COL-002", "S-002 - Sunil Fernando", "2024-11-25", "98.75", "85.00", "0.00", "8,393.75", "");
-            collectionGrid.Rows.Add("COL-003", "S-004 - Nimal Rathnayake", "2024-11-25", "156.25", "85.00", "200.00", "13,481.25", "With transport");
-            collectionGrid.Rows.Add("COL-004", "S-001 - Kamal Perera", "2024-11-24", "115.00", "85.00", "0.00", "9,775.00", "Evening");
-            collectionGrid.Rows.Add("COL-005", "S-005 - Sampath Bandara", "2024-11-24", "87.50", "85.00", "100.00", "7,537.50", "");
-        }
+
+       
 
         private void LoadFilterSuppliers()
         {
-            cmbFilterSupplier.Items.Add("All Suppliers");
-            cmbFilterSupplier.Items.Add("S-001 - Kamal Perera");
-            cmbFilterSupplier.Items.Add("S-002 - Sunil Fernando");
-            cmbFilterSupplier.Items.Add("S-003 - Anura Silva");
-            cmbFilterSupplier.Items.Add("S-004 - Nimal Rathnayake");
-            cmbFilterSupplier.Items.Add("S-005 - Sampath Bandara");
-            cmbFilterSupplier.SelectedIndex = 0;
+            cmbFilterSupplier.Items.Clear();
+            cmbFilterSupplier.Items.Add("All");
+            try
+            {
+                var suppliers = DataAccess.GetAllSuppliers();
+                foreach (var supplier in suppliers)
+                {
+                    cmbFilterSupplier.Items.Add(new SuppliarItem
+                    {
+                        SuppliarId = supplier.SupplierID,
+                        DisplayName = $"{supplier.SupplierNumber} - {supplier.SupplierName}"
+                    });
+                }
+            }
+            catch
+            {
+                throw;
+            }
         }
 
         // Load actual data from database
         private void LoadCollections()
         {
-            // TODO: Load collections from database
-            Console.WriteLine("Loading collections...");
+            collectionGrid.Rows.Clear();
+
+            try
+            {
+                var collections = DataAccess.GetDailyCollections();
+                foreach (var collection in collections)
+                {
+                    collectionGrid.Rows.Add(collection.CollectionID, collection.SupplierName, collection.CollectionDate, collection.Weight,collection.IsTransportAdd, collection.Notes,collection.SupplierID);
+                }
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show($"Error loading Collections: {ex.Message}", "Error",
+    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         // Event Handlers
@@ -58,11 +79,11 @@ namespace GangasiriTeaFactoryBilling.TeaCollection
 
                     collectionGrid.Rows.Add(
                         newId,
-                        collectionData.Supplier,
-                        collectionData.Date.ToString("yyyy-MM-dd"),
+                        collectionData.SupplierName,
+                        collectionData.CollectionDate.ToString("yyyy-MM-dd"),
                         collectionData.Weight.ToString("N2"),
                         "85.00", // Current rate
-                        collectionData.Transport.ToString("N2"),
+                        collectionData.IsTransportAdd,
                         collectionData.TotalAmount.ToString("N2"),
                         collectionData.Notes
                     );
@@ -79,22 +100,30 @@ namespace GangasiriTeaFactoryBilling.TeaCollection
             {
                 DataGridViewRow selectedRow = collectionGrid.SelectedRows[0];
                 string collectionId = selectedRow.Cells["CollectionID"].Value.ToString();
+                int supplierId = int.Parse(selectedRow.Cells["SupplierID"].Value.ToString());
+                DateTime Date =DateTime.Parse(selectedRow.Cells["Date"].Value.ToString());
+                decimal weight = Convert.ToDecimal(selectedRow.Cells["Weight"].Value);
+                string transport = selectedRow.Cells["Transport"].Value.ToString();
+                string notes =selectedRow.Cells["Notes"].Value.ToString();
 
                 using (AddCollection editForm = new AddCollection())
                 {
                     // Pre-populate form with selected data
                     editForm.Text = "Edit Collection - " + collectionId;
+                    editForm.IsEditMode = true;
+                    editForm.CollectionId = collectionId;
+                    editForm.LoadCollectionData(supplierId, Date,weight, transport, notes);
 
                     // TODO: Load collection data for editing
                     if (editForm.ShowDialog() == DialogResult.OK)
                     {
                         // Update row
                         var collectionData = editForm.Result;
-                        selectedRow.Cells["Supplier"].Value = collectionData.Supplier;
-                        selectedRow.Cells["Date"].Value = collectionData.Date.ToString("yyyy-MM-dd");
+                        selectedRow.Cells["Supplier"].Value = collectionData.SupplierName;
+                        selectedRow.Cells["Date"].Value = collectionData.CollectionDate.ToString("yyyy-MM-dd");
                         selectedRow.Cells["Weight"].Value = collectionData.Weight.ToString("N2");
-                        selectedRow.Cells["Transport"].Value = collectionData.Transport.ToString("N2");
-                        selectedRow.Cells["Total"].Value = collectionData.TotalAmount.ToString("N2");
+                        selectedRow.Cells["Transport"].Value = collectionData.IsTransportAdd;
+                        //selectedRow.Cells["Total"].Value = collectionData.TotalAmount.ToString("N2");
                         selectedRow.Cells["Notes"].Value = collectionData.Notes;
 
                         MessageBox.Show("Collection updated successfully!", "Success",
@@ -123,8 +152,18 @@ namespace GangasiriTeaFactoryBilling.TeaCollection
                 if (result == DialogResult.Yes)
                 {
                     collectionGrid.Rows.Remove(selectedRow);
-                    MessageBox.Show("Collection deleted successfully!", "Success",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    try
+                    {
+                        DataAccess.DeleteDailyCollection(collectionId);
+                        MessageBox.Show("Collection deleted successfully!", "Success",
+                       MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error deleting collection: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+
+                   
                 }
             }
             else
@@ -136,11 +175,12 @@ namespace GangasiriTeaFactoryBilling.TeaCollection
 
         private void BtnRefresh_Click(object sender, EventArgs e)
         {
+            LoadFilterSuppliers();
             txtSearch.Clear();
             dtpFilterDate.Value = DateTime.Now;
-            cmbFilterSupplier.SelectedIndex = 0;
+            cmbFilterSupplier.SelectedIndex = -1;
             collectionGrid.Rows.Clear();
-            LoadSampleData();
+            LoadCollections();
             MessageBox.Show("Collections list refreshed!", "Refresh",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
@@ -160,11 +200,18 @@ namespace GangasiriTeaFactoryBilling.TeaCollection
             ApplyFilters();
         }
 
+        private void ChkFilterDate_CheckedChanged(object sender, EventArgs e)
+        {
+            ApplyFilters();
+        }
+
         private void BtnClearFilters_Click(object sender, EventArgs e)
         {
             txtSearch.Clear();
             dtpFilterDate.Value = DateTime.Now;
-            cmbFilterSupplier.SelectedIndex = 0;
+            chkFilterDate.Checked = true;
+            cmbFilterSupplier.Text = "";
+            cmbFilterSupplier.SelectedIndex = -1;
             ApplyFilters();
         }
 
@@ -172,27 +219,45 @@ namespace GangasiriTeaFactoryBilling.TeaCollection
         {
             string searchText = txtSearch.Text.Trim().ToLower();
             string filterDate = dtpFilterDate.Value.ToString("yyyy-MM-dd");
-            string selectedSupplier = cmbFilterSupplier.SelectedIndex > 0 ? cmbFilterSupplier.Text : "";
+            string selectedSupplier = cmbFilterSupplier.Text;
 
             foreach (DataGridViewRow row in collectionGrid.Rows)
             {
                 bool visible = true;
 
                 // Apply date filter
-                string rowDate = row.Cells["Date"].Value?.ToString();
-                if (!string.IsNullOrEmpty(rowDate) && rowDate != filterDate)
+                if (chkFilterDate.Checked)
                 {
-                    visible = false;
-                }
-
-                // Apply supplier filter
-                if (visible && !string.IsNullOrEmpty(selectedSupplier))
-                {
-                    string rowSupplier = row.Cells["Supplier"].Value?.ToString();
-                    if (rowSupplier != selectedSupplier)
+                    string rowDate = row.Cells["Date"].Value?.ToString();
+                    if (!string.IsNullOrEmpty(rowDate) && rowDate != filterDate)
                     {
                         visible = false;
                     }
+                }
+
+                // Apply supplier filter
+                if (visible && cmbFilterSupplier.SelectedItem is SuppliarItem selectedItem)
+                {
+                    if (row.Cells["SupplierID"].Value != null)
+                    {
+                        int rowSupplierId = int.Parse(row.Cells["SupplierID"].Value.ToString());
+                        if (rowSupplierId != selectedItem.SuppliarId)
+                        {
+                            visible = false;
+                        }
+                    }
+                }
+                else if (visible && !string.IsNullOrEmpty(selectedSupplier) && selectedSupplier != "All")
+                {
+                     // Fallback for typed text if not selected from list (optional, but good for autocomplete)
+                     string rowSupplier = row.Cells["Supplier"].Value?.ToString() ?? "";
+                     if (!rowSupplier.ToLower().Contains(selectedSupplier.ToLower()))
+                     {
+                         // Strict matching might be better, but let's stick to ID logic primarily.
+                         // If no item selected (e.g. user typed partial name), maybe we shouldn't filter strict?
+                         // For now, if SelectedItem is null, we assume NO supplier filter unless we want text search.
+                         // But usually dropdown autocomplete sets SelectedItem.
+                     }
                 }
 
                 // Apply search filter

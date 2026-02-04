@@ -1,4 +1,6 @@
-﻿using System;
+﻿using GangasiriTeaFactoryBilling.db;
+using GangasiriTeaFactoryBilling.Models;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -10,13 +12,13 @@ using System.Windows.Forms;
 
 namespace GangasiriTeaFactoryBilling.Advanced
 {
-    public partial class frmAddAdvanced : Form
+    public partial class frmAddAddvanced : Form
     {
         public bool IsEditMode { get; set; } = false;
         public string AdvanceId { get; set; } = string.Empty;
 
         // Property to get the advance data after saving
-        public AdvanceData Result { get; private set; } = null!;
+        public Advance Result { get; private set; } = null!;
 
         public class AdvanceData
         {
@@ -25,23 +27,53 @@ namespace GangasiriTeaFactoryBilling.Advanced
             public decimal Amount { get; set; }
             public string Description { get; set; }
         }   
-        public frmAddAdvanced()
+        public frmAddAddvanced(int? supplierId = null)
         {
             InitializeComponent();
+            LoadSuppliers(supplierId);
         }
 
-        private void LoadSuppliers()
-        {
-            // TODO: Load suppliers from database
-            // Sample data
-            cmbSupplier.Items.Add("S-001 - Kamal Perera");
-            cmbSupplier.Items.Add("S-002 - Sunil Fernando");
-            cmbSupplier.Items.Add("S-003 - Anura Silva");
-            cmbSupplier.Items.Add("S-004 - Nimal Rathnayake");
-            cmbSupplier.Items.Add("S-005 - Sampath Bandara");
 
-            if (cmbSupplier.Items.Count > 0)
-                cmbSupplier.SelectedIndex = 0;
+
+        private void LoadSuppliers(int? selectedSupplierId = null)
+        {
+            SuppliarItem? itemToSelect = null;
+            try
+            {
+                var suppliers = DataAccess.GetActiveSuppliers();
+                // Enable Autocomplete
+                cmbSupplier.DropDownStyle = ComboBoxStyle.DropDown;
+                cmbSupplier.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+                cmbSupplier.AutoCompleteSource = AutoCompleteSource.ListItems;
+
+                foreach (var supplier in suppliers)
+                {
+                    var item = new SuppliarItem
+                    {
+                        SuppliarId = supplier.SupplierID,
+                        DisplayName = $"{supplier.SupplierNumber} - {supplier.SupplierName}"
+                    };
+                    cmbSupplier.Items.Add(item);
+
+                    if (selectedSupplierId.HasValue && item.SuppliarId == selectedSupplierId.Value)
+                    {
+                        itemToSelect = item;
+                    }
+                }
+
+                if (itemToSelect != null)
+                {
+                    cmbSupplier.SelectedItem = itemToSelect;
+                }
+                else if (cmbSupplier.Items.Count > 0)
+                {
+                    cmbSupplier.SelectedIndex = 0;
+                }
+            }
+            catch
+            {
+                throw;
+            }
         }
 
         // Method to load data for editing
@@ -50,7 +82,7 @@ namespace GangasiriTeaFactoryBilling.Advanced
             // Find and select the supplier
             for (int i = 0; i < cmbSupplier.Items.Count; i++)
             {
-                if (cmbSupplier.Items[i].ToString() == supplier)
+                if (cmbSupplier.Items[i].ToString().Contains(supplier))
                 {
                     cmbSupplier.SelectedIndex = i;
                     break;
@@ -64,16 +96,40 @@ namespace GangasiriTeaFactoryBilling.Advanced
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
+            var supplierItem = cmbSupplier.SelectedItem as SuppliarItem;
+            if (supplierItem == null)
+            {
+                MessageBox.Show("Please select a valid supplier.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
             if (ValidateForm())
             {
-                Result = new AdvanceData
+                Result = new Advance
                 {
-                    Supplier = cmbSupplier.Text,
-                    Date = dtpDate.Value,
+                    SupplierID = supplierItem.SuppliarId,
+                    AdvanceDate = dtpDate.Value,
                     Amount = decimal.Parse(txtAmount.Text),
-                    Description = txtDescription.Text
+                    Description = txtDescription.Text,
+                    Status = "Active",
+                    CreatedDate = DateTime.Now
                 };
+                try
+                {
+                    if (IsEditMode)
+                    {
+                        Result.AdvanceID = int.Parse(AdvanceId);
+                        DataAccess.UpdateAdvance(Result);
+                    }
+                    else
+                    {
 
+                        DataAccess.AddAdvance(Result);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error saving advance: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }

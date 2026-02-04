@@ -1,4 +1,6 @@
-﻿using System;
+﻿using GangasiriTeaFactoryBilling.db;
+using GangasiriTeaFactoryBilling.Models;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -15,7 +17,7 @@ namespace GangasiriTeaFactoryBilling.LineManagements
 
         public bool IsEditMode { get; set; } = false;
         public string LineId { get; set; }
-        public LineData Result { get; private set; }
+        public Line Result { get; private set; }
 
         public class LineData
         {
@@ -35,17 +37,50 @@ namespace GangasiriTeaFactoryBilling.LineManagements
             txtTransportFee.Text = transportFee.ToString("N2");
         }
 
+        public void SetEditMode(string lineId, string name, string description, decimal fee)
+        {
+             IsEditMode = true;
+             LineId = lineId;
+             LoadLineData(name, description, fee);
+             
+             // Update UI
+             if (btnSave != null) btnSave.Text = "💾 Update Line";
+             this.Text = "✏️ Edit Line - " + lineId;
+             
+             // Update title label if accessible, or relying on form title
+        }
+
         private void BtnSave_Click(object sender, EventArgs e)
         {
+            // DEBUG: Check state
+            // MessageBox.Show($"Debug: IsEditMode={IsEditMode}, LineId={LineId}", "Debug Info");
+
             if (ValidateForm())
             {
-                Result = new LineData
+                Result = new Line
                 {
                     LineName = txtLineName.Text,
                     Description = txtDescription.Text,
-                    TransportFee = decimal.Parse(txtTransportFee.Text)
+                    TransportFee = decimal.Parse(txtTransportFee.Text),
+                    Status = "Active"
                 };
-
+                if (IsEditMode)
+                {
+                    Result.LineID = LineId;
+                    bool success = DataAccess.UpdateLine(Result);
+                    if (!success)
+                    {
+                        MessageBox.Show("Failed to update line. It may have been deleted.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                }
+                else
+                {
+                    string newId = "L-" + (DataAccess.GetCounts("Lines")+1).ToString("D3");
+                    Result.LineID = newId;
+                    DataAccess.AddLine(Result);
+                }
+                    
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }

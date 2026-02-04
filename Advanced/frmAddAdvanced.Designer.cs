@@ -1,6 +1,6 @@
 ﻿namespace GangasiriTeaFactoryBilling.Advanced
 {
-    partial class frmAddAdvanced
+    partial class frmAddAddvanced
     {
         /// <summary>
         /// Required designer variable.
@@ -44,7 +44,7 @@
             this.Size = new Size(550, 500);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.Sizable;
-            this.MinimumSize = new Size(500, 450);
+            this.MinimumSize = new Size(500, 600);
             this.BackColor = Color.FromArgb(240, 240, 240);
             this.Padding = new Padding(20);
 
@@ -119,9 +119,12 @@
                 Font = new Font("Segoe UI", 11),
                 Dock = DockStyle.Fill,
                 Height = 40,
-                DropDownStyle = ComboBoxStyle.DropDownList,
+                DropDownStyle = ComboBoxStyle.DropDown,
+
                 Margin = new Padding(0, 5, 0, 5)
             };
+            cmbSupplier.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+            cmbSupplier.AutoCompleteSource = AutoCompleteSource.ListItems;
 
             // Row 1: Date
             Label lblDate = new Label
@@ -147,7 +150,7 @@
             // Row 2: Amount
             Label lblAmount = new Label
             {
-                Text = "Amount (₹):",
+                Text = "Amount (LKR):",
                 Font = new Font("Segoe UI", 11, FontStyle.Bold),
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft,
@@ -164,6 +167,32 @@
                 PlaceholderText = "Enter amount",
                 Margin = new Padding(0, 5, 0, 5)
             };
+
+            Label lbltype = new Label
+            {
+                Text = "Type:",
+                Font = new Font("Segoe UI", 11, FontStyle.Bold),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(5),
+                Margin = new Padding(0, 5, 0, 5)
+            };
+
+            ComboBox cmbType = new ComboBox
+            {
+                Font = new Font("Segoe UI", 11),
+                Dock = DockStyle.Fill,
+                Height = 40,
+                DropDownStyle = ComboBoxStyle.DropDown,
+                Margin = new Padding(0, 5, 0, 5),
+            };
+
+            // Add items to the ComboBox
+            cmbType.Items.Add("Tea");
+            cmbType.Items.Add("Advanced");
+
+            // Optional: Set a default selected item
+            cmbType.SelectedIndex = 1;
 
             // Row 3: Description
             Label lblDescription = new Label
@@ -201,13 +230,16 @@
             formLayout.Controls.Add(txtAmount, 1, 2);
             formLayout.Controls.Add(lblDescription, 0, 3);
             formLayout.Controls.Add(txtDescription, 1, 3);
+            //formLayout.Controls.Add(lbltype,0,3);
+            //formLayout.Controls.Add(cmbType,1,3);
             formLayout.Controls.Add(spacer1, 0, 4);
-            formLayout.Controls.Add(spacer2, 1, 4);
+            formLayout.Controls.Add(spacer2, 0, 4);
 
             // Set row heights
             formLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
             formLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
             formLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
+           // formLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
             formLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 120));
             formLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // Spacer
 

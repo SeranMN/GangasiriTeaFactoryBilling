@@ -1,4 +1,6 @@
-﻿namespace GangasiriTeaFactoryBilling
+﻿using GangasiriTeaFactoryBilling.Suppliars;
+
+namespace GangasiriTeaFactoryBilling
 {
     partial class frmSuppliars
     {
@@ -29,6 +31,10 @@
         private void InitializeComponent()
         {
             this.SuspendLayout();
+            
+            // Define controls
+            this.txtSearch = new TextBox();
+            this.cmbStatusFilter = new ComboBox();
 
             // Form properties
             this.Text = "Suppliers Management";
@@ -80,25 +86,35 @@
             Panel searchPanel = new Panel
             {
                 Height = 40,
-                Width = 400,
+                Width = 600,
                 Location = new Point(0, 50)
             };
 
             txtSearch = new TextBox
             {
-                PlaceholderText = "Search suppliers by name or ID...",
+                PlaceholderText = "Search...",
                 Font = new Font("Segoe UI", 10),
-                Size = new Size(300, 36),
+                Size = new Size(200, 36),
                 Location = new Point(0, 0),
                 Padding = new Padding(10)
             };
+
+            cmbStatusFilter = new ComboBox
+            {
+                Font = new Font("Segoe UI", 10),
+                Size = new Size(150, 36),
+                Location = new Point(210, 0),
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                FlatStyle = FlatStyle.Flat
+            };
+            // Items added in code
 
             btnSearch = new Button
             {
                 Text = "🔍 Search",
                 Font = new Font("Segoe UI", 10),
                 Size = new Size(100, 36),
-                Location = new Point(305, 0),
+                Location = new Point(370, 0),
                 BackColor = Color.FromArgb(0, 122, 204),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -108,14 +124,15 @@
             btnSearch.Click += BtnSearch_Click;
 
             searchPanel.Controls.Add(txtSearch);
+            searchPanel.Controls.Add(cmbStatusFilter);
             searchPanel.Controls.Add(btnSearch);
 
             // Action buttons panel
             Panel actionPanel = new Panel
             {
                 Height = 40,
-                Width = 400,
-                Location = new Point(450, 50)
+                Width = 500,
+                Location = new Point(620, 50) // Moved significantly right to clear searchPanel (width 600)
             };
 
             btnAddSupplier = new Button
@@ -192,6 +209,7 @@
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                 RowHeadersVisible = false,
+                
                 Font = new Font("Segoe UI", 10)
             };
 
@@ -205,6 +223,7 @@
 
             // Add columns
             suppliersGrid.Columns.Add("SupplierID", "ID");
+            suppliersGrid.Columns.Add("SupplierNo", "Supplier No");
             suppliersGrid.Columns.Add("SupplierName", "Name");
             suppliersGrid.Columns.Add("Telephone", "Telephone");
             suppliersGrid.Columns.Add("Line", "Line");
@@ -213,9 +232,10 @@
 
             // Style specific columns
             suppliersGrid.Columns["Status"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
-
-            // Add sample data (replace with database data)
-            AddSampleData();
+            suppliersGrid.Columns["SupplierID"].Visible = false;
+            suppliersGrid.CellDoubleClick += SuppliersGrid_CellDoubleClick;
+            
+            LoadSuppliers();
 
             // Add action buttons to rows
             suppliersGrid.CellPainting += SuppliersGrid_CellPainting;
@@ -225,6 +245,10 @@
 
             return panel;
         }
+
+        
+
+
     }
 
         #endregion

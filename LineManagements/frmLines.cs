@@ -1,4 +1,6 @@
-﻿using System;
+﻿using GangasiriTeaFactoryBilling.db;
+using GangasiriTeaFactoryBilling.Models;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -19,19 +21,26 @@ namespace GangasiriTeaFactoryBilling.LineManagements
             LoadLines();
         }
 
-        private void LoadSampleData()
-        {
-            linesGrid.Rows.Clear();
-            linesGrid.Rows.Add("L-001", "Line 1", "Main collection line for northern area", "150.00", "✅ Active");
-            linesGrid.Rows.Add("L-002", "Line 2", "Secondary line for southern region", "200.00", "✅ Active");
-            linesGrid.Rows.Add("L-003", "Line 3", "Premium line for high-quality leaves", "250.00", "✅ Active");
-            linesGrid.Rows.Add("L-004", "Line 4", "New experimental line", "100.00", "⚠️ Inactive");
-        }
+       
 
         private void LoadLines()
         {
-            // TODO: Load lines from database
-            Console.WriteLine("Loading lines...");
+            try
+            {
+                linesGrid.Rows.Clear();
+                var lines = DataAccess.GetAllLines();
+
+                foreach (var line in lines)
+                {
+                    string statusIcon = line.Status == "Active" ? "✅ Active" : "⚠️ Inactive";
+
+                    linesGrid.Rows.Add(line.LineID, line.LineName, line.Description, line.TransportFee, statusIcon);
+                }
+            }catch(Exception ex)
+            {
+                MessageBox.Show($"Error loading Lines: {ex.Message}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         // Event Handlers
@@ -71,10 +80,7 @@ namespace GangasiriTeaFactoryBilling.LineManagements
 
                 using (frmAddLines editForm = new frmAddLines())
                 {
-                    editForm.Text = "Edit Line - " + lineId;
-                    editForm.IsEditMode = true;
-                    editForm.LineId = lineId;
-                    editForm.LoadLineData(lineName, description, transportFee);
+                    editForm.SetEditMode(lineId, lineName, description, transportFee);
 
                     if (editForm.ShowDialog() == DialogResult.OK)
                     {
@@ -110,6 +116,7 @@ namespace GangasiriTeaFactoryBilling.LineManagements
                 if (result == DialogResult.Yes)
                 {
                     linesGrid.Rows.Remove(selectedRow);
+                    DataAccess.DeleteLine(lineId);
                     MessageBox.Show("Line deleted successfully!", "Success",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
@@ -125,7 +132,7 @@ namespace GangasiriTeaFactoryBilling.LineManagements
         {
             txtSearch.Clear();
             linesGrid.Rows.Clear();
-            LoadSampleData();
+            LoadLines();
             MessageBox.Show("Lines list refreshed!", "Refresh",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
