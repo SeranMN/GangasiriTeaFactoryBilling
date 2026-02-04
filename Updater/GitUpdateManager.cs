@@ -78,14 +78,24 @@ namespace GangasiriTeaFactoryBilling.Updater
                                             });
                                         }
                                     }
+                                    else
+                                    {
+                                        // DEBUG: Show why it didn't update
+                                        MessageBox.Show($"Debug: Update Check\nGitHub: {latestVersion}\nLocal: {currentVersion}\nResult: Up to Date", "Debug Info");
+                                    }
                                 }
                             }
                         }
+                    }
+                    else
+                    {
+                         MessageBox.Show($"Debug: GitHub API Error {response.StatusCode}", "Debug Error");
                     }
                 }
             }
             catch (Exception ex)
             {
+                MessageBox.Show($"Debug: Auto-Update Check Failed\n{ex.Message}", "Debug Error");
                 Debug.WriteLine($"Auto-Update Check Failed: {ex.Message}");
             }
         }
