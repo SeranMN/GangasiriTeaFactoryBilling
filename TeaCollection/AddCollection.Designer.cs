@@ -236,9 +236,9 @@
                 Enabled = false
             };
 
-            Label lblRs = new Label
+            lblRs = new Label
             {
-                Text = "₹",
+                Text = "LKR",
                 Font = new Font("Segoe UI", 11),
                 Location = new Point(340, 10),
                 AutoSize = true
@@ -271,7 +271,7 @@
 
             Label lblRate = new Label
             {
-                Text = $"Rate: ₹{currentRate:F2} per kg",
+                Text = $"Rate: LKR{currentRate:F2} per kg",
                 Font = new Font("Segoe UI", 10),
                 Location = new Point(10, 10),
                 AutoSize = true

@@ -37,6 +37,12 @@
             this.BackColor = Color.FromArgb(240, 240, 240);
             this.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
 
+            try
+            {
+                this.Icon = new Icon( "D:\\GangaSiri Tea Factory Billing\\GangasiriTeaFactoryBilling\\img\\app_icon.ico");
+            }
+            catch { }
+            
             this.ResumeLayout(false);
         }
 

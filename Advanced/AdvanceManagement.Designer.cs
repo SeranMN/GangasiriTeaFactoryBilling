@@ -2,7 +2,7 @@
 
 namespace GangasiriTeaFactoryBilling.Advanced
 {
-    partial class AdvanceManagement
+    partial class frmAdvanceManagement
     {
         /// <summary>
         /// Required designer variable.
@@ -25,7 +25,7 @@ namespace GangasiriTeaFactoryBilling.Advanced
         #region Windows Form Designer generated code
         private DataGridView advancesGrid;
         private Button btnAddAdvance;
-        private Button btnEdit;
+        
         private Button btnDelete;
         private Button btnRefresh;
         private TextBox txtSearch;
@@ -136,26 +136,15 @@ namespace GangasiriTeaFactoryBilling.Advanced
             btnAddAdvance.FlatAppearance.BorderSize = 0;
             btnAddAdvance.Click += BtnAddAdvance_Click;
 
-            btnEdit = new Button
-            {
-                Text = "✏️ Edit",
-                Font = new Font("Segoe UI", 10),
-                Size = new Size(100, 40),
-                Location = new Point(160, 0),
-                BackColor = Color.FromArgb(33, 150, 243),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-            btnEdit.FlatAppearance.BorderSize = 0;
-            btnEdit.Click += BtnEdit_Click;
+            btnAddAdvance.FlatAppearance.BorderSize = 0;
+            btnAddAdvance.Click += BtnAddAdvance_Click;
 
             btnDelete = new Button
             {
                 Text = "🗑️ Delete",
                 Font = new Font("Segoe UI", 10),
                 Size = new Size(100, 40),
-                Location = new Point(270, 0),
+                Location = new Point(160, 0),
                 BackColor = Color.FromArgb(244, 67, 54),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -169,7 +158,7 @@ namespace GangasiriTeaFactoryBilling.Advanced
                 Text = "🔄 Refresh",
                 Font = new Font("Segoe UI", 10),
                 Size = new Size(100, 40),
-                Location = new Point(380, 0),
+                Location = new Point(270, 0),
                 BackColor = Color.FromArgb(121, 85, 72),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -182,7 +171,7 @@ namespace GangasiriTeaFactoryBilling.Advanced
             searchPanel.Controls.Add(btnSearch);
 
             actionPanel.Controls.Add(btnAddAdvance);
-            actionPanel.Controls.Add(btnEdit);
+            
             actionPanel.Controls.Add(btnDelete);
             actionPanel.Controls.Add(btnRefresh);
 
@@ -244,8 +233,14 @@ namespace GangasiriTeaFactoryBilling.Advanced
             advancesGrid.Columns["Amount"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
             advancesGrid.Columns["Status"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
 
-            // Add sample data
-            LoadSampleData();
+            advancesGrid.CellDoubleClick += BtnEdit_Click;
+
+            // Context Menu
+            ContextMenuStrip contextMenu = new ContextMenuStrip();
+            ToolStripMenuItem deleteItem = new ToolStripMenuItem("Delete");
+            deleteItem.Click += BtnDelete_Click;
+            contextMenu.Items.Add(deleteItem);
+            advancesGrid.ContextMenuStrip = contextMenu;
 
             panel.Controls.Add(advancesGrid);
 

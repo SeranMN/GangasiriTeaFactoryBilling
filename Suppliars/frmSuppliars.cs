@@ -1,4 +1,6 @@
-﻿using GangasiriTeaFactoryBilling.Suppliars;
+﻿using GangasiriTeaFactoryBilling.db;
+using GangasiriTeaFactoryBilling.Models;
+using GangasiriTeaFactoryBilling.Suppliars;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -20,21 +22,22 @@ namespace GangasiriTeaFactoryBilling
         private Button btnSearch;
         private Button btnExport;
         private Button btnRefresh;
+        private ComboBox cmbStatusFilter;
         public frmSuppliars()
         {
             InitializeComponent();
+            InitializeStatusFilter();
         }
-        private void AddSampleData()
+
+        private void InitializeStatusFilter()
         {
-            // Add sample suppliers (replace with actual database data)
-            suppliersGrid.Rows.Add("S-001", "Kamal Perera", "077-1234567", "Line 1", "✅ Active");
-            suppliersGrid.Rows.Add("S-002", "Sunil Fernando", "071-2345678", "Line 2", "✅ Active", "Edit|Delete");
-            suppliersGrid.Rows.Add("S-003", "Anura Silva", "072-3456789", "Line 3", "⚠️ Inactive", "Edit|Delete");
-            suppliersGrid.Rows.Add("S-004", "Nimal Rathnayake", "076-4567890", "Line 1", "✅ Active", "Edit|Delete");
-            suppliersGrid.Rows.Add("S-005", "Sampath Bandara", "075-5678901", "Line 2", "✅ Active", "Edit|Delete");
-            suppliersGrid.Rows.Add("S-006", "Lalith Gunawardena", "078-6789012", "Line 1", "✅ Active", "Edit|Delete");
-            suppliersGrid.Rows.Add("S-007", "Chaminda Peris", "070-7890123", "Line 3", "⚠️ Inactive");
+            cmbStatusFilter.Items.Add("Active Suppliers");
+            cmbStatusFilter.Items.Add("Inactive Suppliers");
+            cmbStatusFilter.Items.Add("All Suppliers");
+            cmbStatusFilter.SelectedIndex = 0; // Default to Active
+            cmbStatusFilter.SelectedIndexChanged += (s, e) => LoadSuppliers();
         }
+        
 
         private void SuppliersGrid_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
         {
@@ -44,27 +47,22 @@ namespace GangasiriTeaFactoryBilling
                 e.Paint(e.CellBounds, DataGridViewPaintParts.All);
 
                 var cellBounds = e.CellBounds;
-                var editBounds = new Rectangle(cellBounds.X + 10, cellBounds.Y + 5, 60, cellBounds.Height - 10);
-                var deleteBounds = new Rectangle(cellBounds.X + 80, cellBounds.Y + 5, 60, cellBounds.Height - 10);
+                var buttonBounds = new Rectangle(cellBounds.X + (cellBounds.Width - 80) / 2, cellBounds.Y + 5, 80, cellBounds.Height - 10);
 
-                // Draw Edit button
-                using (Brush brush = new SolidBrush(Color.FromArgb(33, 150, 243)))
-                {
-                    e.Graphics.FillRectangle(brush, editBounds);
-                }
-                TextRenderer.DrawText(e.Graphics, "Edit",
-                    new Font("Segoe UI", 9, FontStyle.Bold),
-                    editBounds, Color.White,
-                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+                // Determine Status
+                string status = suppliersGrid.Rows[e.RowIndex].Cells["Status"].Value?.ToString() ?? "";
+                bool isActive = status.Contains("Active");
+                
+                string btnText = isActive ? "Delete" : "Restore";
+                Color btnColor = isActive ? Color.FromArgb(244, 67, 54) : Color.FromArgb(76, 175, 80); // Red or Green
 
-                // Draw Delete button
-                using (Brush brush = new SolidBrush(Color.FromArgb(244, 67, 54)))
+                using (Brush brush = new SolidBrush(btnColor))
                 {
-                    e.Graphics.FillRectangle(brush, deleteBounds);
+                    e.Graphics.FillRectangle(brush, buttonBounds);
                 }
-                TextRenderer.DrawText(e.Graphics, "Delete",
+                TextRenderer.DrawText(e.Graphics, btnText,
                     new Font("Segoe UI", 9, FontStyle.Bold),
-                    deleteBounds, Color.White,
+                    buttonBounds, Color.White,
                     TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
 
                 e.Handled = true;
@@ -76,39 +74,41 @@ namespace GangasiriTeaFactoryBilling
             if (e.RowIndex >= 0 && e.ColumnIndex == suppliersGrid.Columns["Actions"].Index)
             {
                 var cellBounds = suppliersGrid.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, false);
-                int x = e.ColumnIndex;
-                int y = e.RowIndex;
+                var point = suppliersGrid.PointToClient(Cursor.Position);
+                // Re-calculate bounds to match painting
+                var buttonBounds = new Rectangle(cellBounds.X + (cellBounds.Width - 80) / 2, cellBounds.Y + 5, 80, cellBounds.Height - 10);
 
-                // Check if Edit button was clicked
-                if (cellBounds.Contains(suppliersGrid.PointToClient(Cursor.Position)))
+                if (buttonBounds.Contains(point))
                 {
-                    var point = suppliersGrid.PointToClient(Cursor.Position);
-                    var cellRect = suppliersGrid.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, false);
+                    string supplierIdStr = suppliersGrid.Rows[e.RowIndex].Cells["SupplierID"].Value.ToString();
+                    int supplierId = int.Parse(supplierIdStr);
+                    string supplierName = suppliersGrid.Rows[e.RowIndex].Cells["SupplierName"].Value.ToString();
+                    
+                    string status = suppliersGrid.Rows[e.RowIndex].Cells["Status"].Value?.ToString() ?? "";
+                    bool isActive = status.Contains("Active");
 
-                    var editBounds = new Rectangle(cellRect.X + 10, cellRect.Y + 5, 60, cellRect.Height - 10);
-                    var deleteBounds = new Rectangle(cellRect.X + 80, cellRect.Y + 5, 60, cellRect.Height - 10);
-
-                    if (editBounds.Contains(point))
+                    if (isActive)
                     {
-                        // Edit supplier
-                        string supplierId = suppliersGrid.Rows[e.RowIndex].Cells["SupplierID"].Value.ToString();
-                        MessageBox.Show($"Editing supplier: {supplierId}", "Edit Supplier",
-                            MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
-                    else if (deleteBounds.Contains(point))
-                    {
-                        // Delete supplier
-                        string supplierId = suppliersGrid.Rows[e.RowIndex].Cells["SupplierID"].Value.ToString();
-                        string supplierName = suppliersGrid.Rows[e.RowIndex].Cells["SupplierName"].Value.ToString();
-
-                        var result = MessageBox.Show($"Are you sure you want to delete supplier: {supplierName}?",
-                            "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                        var result = MessageBox.Show($"Are you sure you want to deactivate (soft delete) supplier: {supplierName}? They will be moved to 'Inactive Suppliers'.",
+                            "Confirm Deactivate", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
 
                         if (result == DialogResult.Yes)
                         {
-                            suppliersGrid.Rows.RemoveAt(e.RowIndex);
-                            MessageBox.Show("Supplier deleted successfully!", "Success",
-                                MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            DataAccess.DeleteSupplier(supplierId); // This is now Soft Delete
+                            MessageBox.Show("Supplier deactivated successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            LoadSuppliers(); // Refresh
+                        }
+                    }
+                    else
+                    {
+                         var result = MessageBox.Show($"Activate supplier: {supplierName}?",
+                            "Confirm Activate", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                        if (result == DialogResult.Yes)
+                        {
+                            DataAccess.ActivateSupplier(supplierId);
+                            MessageBox.Show("Supplier activated successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            LoadSuppliers(); // Refresh
                         }
                     }
                 }
@@ -117,8 +117,46 @@ namespace GangasiriTeaFactoryBilling
 
         private void LoadSuppliers()
         {
-            // TODO: Load suppliers from database
-            Console.WriteLine("Loading suppliers...");
+            try
+            {
+                suppliersGrid.Rows.Clear();
+                var supliars = DataAccess.GetAllSuppliers();
+                
+                // Get filter, default to Active if null
+                string filter = cmbStatusFilter.SelectedItem?.ToString() ?? "Active Suppliers";
+
+                foreach (var supplier in supliars)
+                {
+                    // Normalize status
+                    string status = string.IsNullOrEmpty(supplier.Status) ? "Active" : supplier.Status;
+                    bool isActive = status.Equals("Active", StringComparison.OrdinalIgnoreCase);
+
+                    bool show = false;
+                    if (filter == "All Suppliers") 
+                    {
+                        show = true;
+                    }
+                    else if (filter == "Active Suppliers") 
+                    {
+                        show = isActive;
+                    }
+                    else if (filter == "Inactive Suppliers") 
+                    {
+                        show = !isActive;
+                    }
+
+                    if (show)
+                    {
+                        string statusIcon = isActive ? "✅ Active" : "❌ Inactive";
+                        suppliersGrid.Rows.Add(supplier.SupplierID, supplier.SupplierNumber, supplier.SupplierName, supplier.Telephone, supplier.LineName, statusIcon, null);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading suppliers: {ex.Message}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         // Event Handlers
@@ -165,9 +203,90 @@ namespace GangasiriTeaFactoryBilling
         {
             txtSearch.Clear();
             suppliersGrid.Rows.Clear();
-            AddSampleData();
+            LoadSuppliers();
             MessageBox.Show("Suppliers list refreshed!", "Refresh",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private frmSupplierDetails currentDetailsForm;
+
+        private void SuppliersGrid_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0)
+            {
+                string supplierId = suppliersGrid.Rows[e.RowIndex].Cells["SupplierID"].Value.ToString();
+                string supplierName = suppliersGrid.Rows[e.RowIndex].Cells["SupplierName"].Value.ToString();
+
+                ShowSupplierDetailsInSameWindow(supplierId, supplierName);
+            }
+        }
+
+        private void ShowSupplierDetailsInSameWindow(string supplierId, string supplierName)
+        {
+            // Hide the current content
+            suppliersGrid.Visible = false;
+
+            // Create and show the details form inside this window
+            currentDetailsForm = new frmSupplierDetails(supplierId, supplierName);
+            currentDetailsForm.TopLevel = false; // Important: This makes it not a top-level window
+            currentDetailsForm.FormBorderStyle = FormBorderStyle.None;
+            currentDetailsForm.Dock = DockStyle.Fill;
+
+            // Add form to current window
+            this.Controls.Add(currentDetailsForm);
+            currentDetailsForm.BringToFront();
+            currentDetailsForm.Show();
+
+            // Add back button to details form or handle in details form
+            AddBackButtonToDetailsForm();
+        }
+
+        private void AddBackButtonToDetailsForm()
+        {
+            if (currentDetailsForm != null)
+            {
+                Button btnBack = new Button
+                {
+                    Text = "← Back to Suppliers",
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    Size = new Size(160, 35),
+                    Location = new Point(50, 750),
+                    BackColor = Color.FromArgb(0, 122, 204),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat
+                };
+                btnBack.FlatAppearance.BorderSize = 0;
+                btnBack.Click += BtnBackFromDetails_Click;
+
+                // Add to the details form
+                currentDetailsForm.Controls.Add(btnBack);
+                btnBack.BringToFront();
+            }
+        }
+
+        private void BtnBackFromDetails_Click(object sender, EventArgs e)
+        {
+            // Remove the details form
+            if (currentDetailsForm != null)
+            {
+                this.Controls.Remove(currentDetailsForm);
+                currentDetailsForm.Dispose();
+                currentDetailsForm = null;
+            }
+
+            // Show the suppliers grid again
+            suppliersGrid.Visible = true;
+            suppliersGrid.BringToFront();
+        }
+
+        // Optional: Handle form closing
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            if (currentDetailsForm != null)
+            {
+                currentDetailsForm.Dispose();
+            }
+            base.OnFormClosing(e);
         }
 
     }

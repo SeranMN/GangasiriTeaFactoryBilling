@@ -1,4 +1,6 @@
-﻿using System;
+﻿using GangasiriTeaFactoryBilling.db;
+using GangasiriTeaFactoryBilling.Models;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -12,9 +14,12 @@ namespace GangasiriTeaFactoryBilling.Suppliars
 {
     public partial class frmAddSupplier : Form
     {
+        public Supplier Result { get; private set; }
+
         public frmAddSupplier()
         {
             InitializeComponent();
+            LoadLines();
         }
         private void BtnAutoGenerate_Click(object sender, EventArgs e)
         {
@@ -25,15 +30,74 @@ namespace GangasiriTeaFactoryBilling.Suppliars
             txtSupplierNumber.Text = $"S-{nextNum:D3}";
         }
 
+        private void LoadLines()
+        {
+            try
+            {
+                cmbLine.Items.Clear();
+                var lines = DataAccess.GetAllLines();
+
+                foreach (var line in lines)
+                {
+                    cmbLine.Items.Add(new LineItem
+                    {
+                        LineID = line.LineID,
+                        DisplayText = $"{line.LineName} (Transport: LKR{line.TransportFee:F2})"
+                    });
+                }
+
+                if (cmbLine.Items.Count > 0)
+                    cmbLine.SelectedIndex = 0;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading lines: {ex.Message}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private class LineItem
+        {
+            public string LineID { get; set; }
+            public string DisplayText { get; set; }
+
+            public override string ToString()
+            {
+                return DisplayText;
+            }
+        }
+
+
         private void BtnSave_Click(object sender, EventArgs e)
         {
             if (ValidateForm())
             {
-                // Save to database
-                MessageBox.Show("Supplier saved successfully!", "Success",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-                this.DialogResult = DialogResult.OK;
-                
+                try
+                {
+                    // Get selected line
+                    var selectedLine = cmbLine.SelectedItem as LineItem;
+
+                    Result = new Supplier
+                    {
+                        SupplierNumber = txtSupplierNumber.Text,
+                        SupplierName = txtFullName.Text,
+                        Telephone = txtTelephone.Text,
+                        LineID = selectedLine?.LineID ??string.Empty,
+                        Address = txtAddress.Text,
+                        DueAmount = decimal.TryParse(txtdueAmount.Text, out var dueAmount) ? dueAmount : 0m,
+                        Status = rbActive.Checked ? "Active" : "Inactive"
+                       
+                    };
+                    DataAccess.AddSupplier(Result);
+                    this.DialogResult = DialogResult.OK;
+                    this.Close();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error saving supplier: {ex.Message}", "Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+
             }
         }
 

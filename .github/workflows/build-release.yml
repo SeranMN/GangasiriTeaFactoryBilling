@@ -1,0 +1,42 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore "GangasiriTeaFactoryBilling/GangasiriTeaFactoryBilling.csproj"
+
+    - name: Build
+      run: dotnet build "GangasiriTeaFactoryBilling/GangasiriTeaFactoryBilling.csproj" --configuration Release --no-restore
+
+    - name: Create Zip Archive
+      run: |
+        Compress-Archive -Path "GangasiriTeaFactoryBilling/bin/Release/net8.0-windows/*" -DestinationPath "GangasiriTeaFactoryBilling.zip"
+
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v1.0.${{ github.run_number }}
+        name: Release v1.0.${{ github.run_number }}
+        draft: false
+        prerelease: false
+        files: GangasiriTeaFactoryBilling.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

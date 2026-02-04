@@ -1,8 +1,12 @@
 ﻿using GangasiriTeaFactoryBilling.Advanced;
 using GangasiriTeaFactoryBilling.DashBoard;
+using GangasiriTeaFactoryBilling.Invoice;
 using GangasiriTeaFactoryBilling.LineManagements;
 using GangasiriTeaFactoryBilling.Suppliars;
 using GangasiriTeaFactoryBilling.TeaCollection;
+using GangasiriTeaFactoryBilling.TeaPacketSell;
+using GangasiriTeaFactoryBilling.TeaRates;
+using GangasiriTeaFactoryBilling.Settings;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -27,10 +31,13 @@ namespace GangasiriTeaFactoryBilling
             InitializeComponent();
             this.Load += FrmMain_Load;
         }
-        private void FrmMain_Load(object sender, EventArgs e)
+        private async void FrmMain_Load(object sender, EventArgs e)
         {
             InitializeUI();
             OpenChildForm(new frmDashboard(), "dashboardBtn");
+            
+            // Check for updates
+            await GangasiriTeaFactoryBilling.Updater.GitUpdateManager.CheckForUpdates();
         }
         private void InitializeUI()
         {
@@ -39,29 +46,33 @@ namespace GangasiriTeaFactoryBilling
             {
                 Dock = DockStyle.Top,
                 Height = 70,
+                
                 BackColor = Color.FromArgb(0, 122, 204)
             };
 
             Label titleLabel = new Label
             {
-                Text = "Tea Factory Management System",
+                Text = "GTF Tea Collection",
                 Font = new Font("Segoe UI", 16, FontStyle.Bold),
                 ForeColor = Color.White,
                 Dock = DockStyle.Left,
+                Width = 500,
                 TextAlign = ContentAlignment.MiddleLeft,
-                Padding = new Padding(20, 0, 0, 0)
+                Padding = new Padding(10, 10, 10, 0)
             };
 
             Label userLabel = new Label
             {
-                Text = "👤 Admin",
+                Text = $"👤 {Session.Username} ({Session.Role})",
                 Font = new Font("Segoe UI", 10),
                 ForeColor = Color.White,
                 Dock = DockStyle.Right,
                 TextAlign = ContentAlignment.MiddleRight,
                 Padding = new Padding(0, 0, 20, 0),
-                AutoSize = true
+                AutoSize = true,
+                Cursor = Cursors.Hand
             };
+            userLabel.Click += (s, e) => new Settings.frmUserProfile().ShowDialog();
 
             headerPanel.Controls.Add(titleLabel);
             headerPanel.Controls.Add(userLabel);
@@ -104,8 +115,9 @@ namespace GangasiriTeaFactoryBilling
                     ("👥 Suppliers", "suppliers", "suppliersBtn"),
                     ("🍃 Daily Collection", "collection", "collectionBtn"),
                     ("💵 Advances", "advances", "advancesBtn"),
+                   // ("$ Tea Packet Sell", "tea", "teaBtn"),
                     ("🧾 Invoices", "invoices", "invoicesBtn"),
-                    ("📈 Reports", "reports", "reportsBtn"),
+                   // ("📈 Reports", "reports", "reportsBtn"),
                     ("🏭 Lines", "lines", "linesBtn"), 
                     ("📊 Tea Rates", "rates", "ratesBtn"), 
                     ("⚙️ Settings", "settings", "settingsBtn")
@@ -113,6 +125,9 @@ namespace GangasiriTeaFactoryBilling
 
             foreach (var (text, tag, name) in buttons)
             {
+                // Access Control: Hide Settings for non-admins
+                if (tag == "settings" && !Session.IsAdmin()) continue;
+
                 Button btn = CreateNavButton(text, tag, name);
                 btn.Location = new Point(0, buttonY);
                 buttonY += buttonHeight + 10;
@@ -224,25 +239,29 @@ namespace GangasiriTeaFactoryBilling
                 case "collection":
                     formToOpen = new frmTeaCollection();
                    break;
-                //case "invoices":
-                //    formToOpen = new frmInvoices();
-                //    break;
+                case "invoices":
+                    formToOpen = new frmInvoices();
+                    break;
                 case "advances":
-                    formToOpen = new AdvanceManagement();
+                    formToOpen = new frmAdvanceManagement();
                     break;
 
                 case "lines":
-                    formToOpen = new frmLines(); // Add this
+                    formToOpen = new frmLines(); 
                     break;
-                //case "rates":
-                //    formToOpen = new frmTeaRates(); // Add this
-                //    break;
+                case "rates":
+                    formToOpen = new frmTeaRates(); 
+                    break;
+                case "tea":
+                    formToOpen = new frmTeaPacketSellManagement();
+                    break;
                     //case "reports":
                     //    formToOpen = new frmReports();
                     //    break;
-                    //case "settings":
-                    //    formToOpen = new frmSettings();
-                    //    break;
+                    // Settings
+                    case "settings":
+                        formToOpen = new frmSettings();
+                        break;
             }
 
             if (formToOpen != null)

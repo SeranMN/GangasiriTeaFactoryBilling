@@ -43,13 +43,14 @@
         private Button btnSaveAndNew;
         private Button btnCancel;
         private Button btnAutoGenerate;
+        private TextBox txtdueAmount;
         private void InitializeComponent()
         {
             this.Text = "Add New Supplier";
             this.Size = new Size(600, 600);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.Sizable;
-            this.MinimumSize = new Size(550, 550);
+            this.MinimumSize = new Size(550, 650);
             this.BackColor = Color.FromArgb(240, 240, 240);
             this.Padding = new Padding(20);
 
@@ -138,22 +139,22 @@
                 Padding = new Padding(10)
             };
 
-            Button btnAutoGenerate = new Button
-            {
-                Text = "Auto Generate",
-                Font = new Font("Segoe UI", 10),
-                Size = new Size(130, 40),
-                Location = new Point(210, 0),
-                BackColor = Color.FromArgb(96, 125, 139),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-            btnAutoGenerate.FlatAppearance.BorderSize = 0;
-            btnAutoGenerate.Click += BtnAutoGenerate_Click;
+            //Button btnAutoGenerate = new Button
+            //{
+            //    Text = "Auto Generate",
+            //    Font = new Font("Segoe UI", 10),
+            //    Size = new Size(130, 40),
+            //    Location = new Point(210, 0),
+            //    BackColor = Color.FromArgb(96, 125, 139),
+            //    ForeColor = Color.White,
+            //    FlatStyle = FlatStyle.Flat,
+            //    Cursor = Cursors.Hand
+            //};
+            //btnAutoGenerate.FlatAppearance.BorderSize = 0;
+            //btnAutoGenerate.Click += BtnAutoGenerate_Click;
 
-            numberPanel.Controls.Add(txtSupplierNumber);
-            numberPanel.Controls.Add(btnAutoGenerate);
+           numberPanel.Controls.Add(txtSupplierNumber);
+            //numberPanel.Controls.Add(btnAutoGenerate);
 
             // Row 1: Full Name
             Label lblName = new Label
@@ -216,10 +217,8 @@
                 Margin = new Padding(0, 5, 0, 5)
             };
 
-            cmbLine.Items.Add("Line 1");
-            cmbLine.Items.Add("Line 2");
-            cmbLine.Items.Add("Line 3");
-            cmbLine.SelectedIndex = 0;
+           
+            
 
             // Row 4: Address
             Label lblAddress = new Label
@@ -237,6 +236,27 @@
                 Font = new Font("Segoe UI", 11),
                 Dock = DockStyle.Fill,
                 Height = 80,
+                Multiline = true,
+                Text = "",
+                Padding = new Padding(10),
+                Margin = new Padding(0, 5, 0, 5)
+            };
+            // Row 5: Address
+            Label lblAmountDue = new Label
+            {
+                Text = "Due Amount:",
+                Font = new Font("Segoe UI", 11, FontStyle.Bold),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(5),
+                Margin = new Padding(0, 5, 0, 5)
+            };
+
+            txtdueAmount = new TextBox
+            {
+                Font = new Font("Segoe UI", 11),
+                Dock = DockStyle.Fill,
+                Height = 40,
                 Multiline = true,
                 ScrollBars = ScrollBars.Vertical,
                 Padding = new Padding(10),
@@ -296,10 +316,12 @@
             formLayout.Controls.Add(cmbLine, 1, 3);
             formLayout.Controls.Add(lblAddress, 0, 4);
             formLayout.Controls.Add(txtAddress, 1, 4);
-            formLayout.Controls.Add(lblStatus, 0, 5);
-            formLayout.Controls.Add(statusPanel, 1, 5);
-            formLayout.Controls.Add(spacer1, 0, 6);
-            formLayout.Controls.Add(spacer2, 1, 6);
+            formLayout.Controls.Add(lblAmountDue, 0, 5);
+            formLayout.Controls.Add(txtdueAmount, 1, 5);
+            formLayout.Controls.Add(lblStatus, 0, 6);
+            formLayout.Controls.Add(statusPanel, 1, 6);
+            formLayout.Controls.Add(spacer1, 0, 7);
+            formLayout.Controls.Add(spacer2, 1, 7);
 
             // Set row heights
             formLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));

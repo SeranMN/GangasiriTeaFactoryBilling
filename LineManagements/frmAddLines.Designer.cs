@@ -39,8 +39,8 @@
             this.SuspendLayout();
 
             // Form properties
-            this.Text = IsEditMode ? "Edit Line" : "Add New Line";
-            this.Size = new Size(500, 400);
+            //this.Text = IsEditMode ? "Edit Line" : "Add New Line";
+            this.Size = new Size(500, 550);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.Sizable;
             this.MinimumSize = new Size(450, 350);
@@ -110,7 +110,7 @@
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft,
                 Padding = new Padding(5),
-                Margin = new Padding(0, 5, 0, 5)
+                Margin = new Padding(10, 5, 0, 5)
             };
 
             txtLineName = new TextBox
@@ -149,7 +149,7 @@
             // Row 2: Transport Fee
             Label lblTransportFee = new Label
             {
-                Text = "Transport Fee (₹):",
+                Text = "Transport Fee (Rs.):",
                 Font = new Font("Segoe UI", 11, FontStyle.Bold),
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft,

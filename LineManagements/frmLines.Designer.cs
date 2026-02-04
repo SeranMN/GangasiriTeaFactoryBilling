@@ -29,7 +29,7 @@
         /// 
         private DataGridView linesGrid;
         private Button btnAddLine;
-        private Button btnEdit;
+
         private Button btnDelete;
         private Button btnRefresh;
         private TextBox txtSearch;
@@ -136,26 +136,14 @@
             btnAddLine.FlatAppearance.BorderSize = 0;
             btnAddLine.Click += BtnAddLine_Click;
 
-            btnEdit = new Button
-            {
-                Text = "✏️ Edit",
-                Font = new Font("Segoe UI", 10),
-                Size = new Size(100, 40),
-                Location = new Point(130, 0),
-                BackColor = Color.FromArgb(33, 150, 243),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-            btnEdit.FlatAppearance.BorderSize = 0;
-            btnEdit.Click += BtnEdit_Click;
+
 
             btnDelete = new Button
             {
                 Text = "🗑️ Delete",
                 Font = new Font("Segoe UI", 10),
                 Size = new Size(100, 40),
-                Location = new Point(240, 0),
+                Location = new Point(130, 0),
                 BackColor = Color.FromArgb(244, 67, 54),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -169,7 +157,7 @@
                 Text = "🔄 Refresh",
                 Font = new Font("Segoe UI", 10),
                 Size = new Size(100, 40),
-                Location = new Point(350, 0),
+                Location = new Point(240, 0),
                 BackColor = Color.FromArgb(121, 85, 72),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -182,7 +170,7 @@
             searchPanel.Controls.Add(btnSearch);
 
             actionPanel.Controls.Add(btnAddLine);
-            actionPanel.Controls.Add(btnEdit);
+
             actionPanel.Controls.Add(btnDelete);
             actionPanel.Controls.Add(btnRefresh);
 
@@ -229,20 +217,21 @@
             linesGrid.Columns.Add("LineID", "Line ID");
             linesGrid.Columns.Add("LineName", "Line Name");
             linesGrid.Columns.Add("Description", "Description");
-            linesGrid.Columns.Add("TransportFee", "Transport Fee (₹)");
+            linesGrid.Columns.Add("TransportFee", "Transport Fee (LKR)");
             linesGrid.Columns.Add("Status", "Status");
 
             // Style columns
-            linesGrid.Columns["LineID"].Width = 100;
-            linesGrid.Columns["LineName"].Width = 150;
+            linesGrid.Columns["LineID"].Width = 50;
+            linesGrid.Columns["LineName"].Width = 50;
+            linesGrid.Columns["Description"].Width = 50;
+            linesGrid.Columns["TransportFee"].Width = 50;
             linesGrid.Columns["TransportFee"].DefaultCellStyle.Format = "N2";
             linesGrid.Columns["TransportFee"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-            linesGrid.Columns["Status"].Width = 100;
+            linesGrid.Columns["Status"].Width = 50;
             linesGrid.Columns["Status"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
 
-            // Add sample data
-            LoadSampleData();
-
+            linesGrid.CellDoubleClick += BtnEdit_Click;
+            
             panel.Controls.Add(linesGrid);
 
             return panel;

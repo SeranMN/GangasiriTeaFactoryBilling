@@ -1,4 +1,6 @@
-﻿using System;
+﻿using GangasiriTeaFactoryBilling.db;
+using GangasiriTeaFactoryBilling.Models;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -13,13 +15,13 @@ namespace GangasiriTeaFactoryBilling.TeaCollection
     public partial class AddCollection : Form
     {
 
-        public bool IsEditMode { get; set; } = false;
+        public bool IsEditMode { get; set; }
         public string CollectionId { get; set; }
 
-        public decimal currentRate = 160.00m; // Example rate per kg
+        public decimal currentRate = DataAccess.GetCurrentTeaRate() == null ? 0 : DataAccess.GetCurrentTeaRate().Rate; // Example rate per kg
 
         // Property to get the collection data after saving
-        public CollectionData Result { get; private set; }
+        public DailyCollection Result { get; private set; }
 
         public class CollectionData
         {
@@ -30,47 +32,93 @@ namespace GangasiriTeaFactoryBilling.TeaCollection
             public string Notes { get; set; }
             public decimal TotalAmount { get; set; }
         }
-        public AddCollection()
+        public AddCollection(int? supplierId = null)
         {
             InitializeComponent();
-            LoadSuppliers();
+            LoadSuppliers(supplierId);
             CalculateTotal();
         }
 
-        private void LoadSuppliers()
+        private class SuppliarItem
         {
-            // TODO: Load suppliers from database
-            // Sample data
-            cmbSupplier.Items.Add("S-001 - Kamal Perera");
-            cmbSupplier.Items.Add("S-002 - Sunil Fernando");
-            cmbSupplier.Items.Add("S-003 - Anura Silva");
-            cmbSupplier.Items.Add("S-004 - Nimal Rathnayake");
-            cmbSupplier.Items.Add("S-005 - Sampath Bandara");
+            public int SuppliarId { get; set; }
+            public string DisplayName { get; set; }
 
-            if (cmbSupplier.Items.Count > 0)
-                cmbSupplier.SelectedIndex = 0;
+            public override string ToString()
+            {
+                return DisplayName;
+            }
+        }
+
+        private void LoadSuppliers(int? selectedSupplierId = null)
+        {
+            cmbSupplier.Items.Clear();
+            SuppliarItem? itemToSelect = null;
+            try
+            {
+                var supliars = DataAccess.GetActiveSuppliers();
+
+                // Enable Autocomplete
+                cmbSupplier.DropDownStyle = ComboBoxStyle.DropDown;
+                cmbSupplier.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+                cmbSupplier.AutoCompleteSource = AutoCompleteSource.ListItems;
+
+                foreach (var supplier in supliars)
+                {
+                    var item = new SuppliarItem
+                    {
+                        SuppliarId = supplier.SupplierID,
+                        DisplayName = $"{supplier.SupplierNumber} - {supplier.SupplierName}"
+                    };
+                    cmbSupplier.Items.Add(item);
+
+                    if (selectedSupplierId.HasValue && item.SuppliarId == selectedSupplierId.Value)
+                    {
+                        itemToSelect = item;
+                    }
+                }
+
+                if (itemToSelect != null)
+                {
+                    cmbSupplier.SelectedItem = itemToSelect;
+                }
+                else if (cmbSupplier.Items.Count > 0)
+                {
+                    cmbSupplier.SelectedIndex = 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
 
         // Method to load data for editing
-        public void LoadCollectionData(string supplier, DateTime date, decimal weight, decimal transport, string notes)
+        // Method to load data for editing
+        public void LoadCollectionData(int supplierId, DateTime date, decimal weight, string transport, string notes)
         {
             // Find and select the supplier
-            for (int i = 0; i < cmbSupplier.Items.Count; i++)
+            SuppliarItem? itemToSelect = null;
+            foreach (var item in cmbSupplier.Items)
             {
-                if (cmbSupplier.Items[i].ToString() == supplier)
+                if (item is SuppliarItem supplierItem && supplierItem.SuppliarId == supplierId)
                 {
-                    cmbSupplier.SelectedIndex = i;
+                    itemToSelect = supplierItem;
                     break;
                 }
+            }
+
+            if (itemToSelect != null)
+            {
+                cmbSupplier.SelectedItem = itemToSelect;
             }
 
             dtpDate.Value = date;
             txtWeight.Text = weight.ToString("N2");
 
-            if (transport > 0)
+            if (transport == "Yes")
             {
                 chkTransport.Checked = true;
-                txtTransport.Text = transport.ToString("N2");
             }
 
             txtNotes.Text = notes;
@@ -107,11 +155,11 @@ namespace GangasiriTeaFactoryBilling.TeaCollection
                     : 0;
 
                 decimal total = (weight * currentRate) + transport;
-                lblTotalAmount.Text = $"₹{total:N2}";
+                lblTotalAmount.Text = $"LKR {total:N2}";
             }
             else
             {
-                lblTotalAmount.Text = "₹0.00";
+                lblTotalAmount.Text = "LKR 0.00";
             }
         }
 
@@ -124,16 +172,26 @@ namespace GangasiriTeaFactoryBilling.TeaCollection
                     ? decimal.Parse(txtTransport.Text)
                     : 0;
                 decimal total = (weight * currentRate) + transport;
-
-                Result = new CollectionData
+                var selectedSupplier = cmbSupplier.SelectedItem as SuppliarItem;
+                Result = new DailyCollection
                 {
-                    Supplier = cmbSupplier.Text,
-                    Date = dtpDate.Value,
+                    SupplierID = selectedSupplier.SuppliarId,
+                    CollectionDate = dtpDate.Value,
                     Weight = weight,
-                    Transport = transport,
+                    IsTransportAdd = chkTransport.Checked ? "Yes" : "No",
                     Notes = txtNotes.Text,
                     TotalAmount = total
                 };
+
+                if (IsEditMode)
+                {
+                    Result.CollectionID = int.Parse(CollectionId);
+                    DataAccess.UpdateDailyCollection(Result);
+                }
+                else
+                {
+                    DataAccess.AddDailyCollection(Result);
+                }
 
                 this.DialogResult = DialogResult.OK;
                 this.Close();

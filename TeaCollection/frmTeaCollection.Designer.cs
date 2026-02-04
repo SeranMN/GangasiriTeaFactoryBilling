@@ -29,10 +29,11 @@
         /// 
         private DataGridView collectionGrid;
         private Button btnAddCollection;
-        private Button btnEdit;
+
         private Button btnDelete;
         private Button btnRefresh;
         private TextBox txtSearch;
+        private CheckBox chkFilterDate;
         private DateTimePicker dtpFilterDate;
         private ComboBox cmbFilterSupplier;
         private void InitializeComponent()
@@ -89,22 +90,25 @@
             Panel filterPanel = new Panel
             {
                 Height = 40,
-                Width = 600,
+                Width = 800, // Widened to accommodate all controls
                 Location = new Point(0, 50)
             };
 
-            Label lblDate = new Label
+            chkFilterDate = new CheckBox
             {
-                Text = "Date:",
+                Text = "Filter Date",
                 Font = new Font("Segoe UI", 10),
-                Location = new Point(0, 10),
-                AutoSize = true
+                Location = new Point(10, 8),
+                AutoSize = true,
+                Checked = true,
+                Cursor = Cursors.Hand
             };
+            chkFilterDate.CheckedChanged += ChkFilterDate_CheckedChanged;
 
             dtpFilterDate = new DateTimePicker
             {
                 Font = new Font("Segoe UI", 10),
-                Location = new Point(40, 5),
+                Location = new Point(110, 5),
                 Size = new Size(120, 30),
                 Format = DateTimePickerFormat.Short,
                 Value = DateTime.Now
@@ -115,16 +119,18 @@
             {
                 Text = "Supplier:",
                 Font = new Font("Segoe UI", 10),
-                Location = new Point(180, 10),
+                Location = new Point(250, 10),
                 AutoSize = true
             };
 
             cmbFilterSupplier = new ComboBox
             {
                 Font = new Font("Segoe UI", 10),
-                Location = new Point(250, 5),
+                Location = new Point(320, 5),
                 Size = new Size(200, 30),
-                DropDownStyle = ComboBoxStyle.DropDownList
+                DropDownStyle = ComboBoxStyle.DropDown,
+                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                AutoCompleteSource = AutoCompleteSource.ListItems
             };
             cmbFilterSupplier.SelectedIndexChanged += CmbFilterSupplier_SelectedIndexChanged;
 
@@ -133,7 +139,7 @@
                 Text = "Clear Filters",
                 Font = new Font("Segoe UI", 10),
                 Size = new Size(100, 30),
-                Location = new Point(460, 5),
+                Location = new Point(540, 5),
                 BackColor = Color.FromArgb(158, 158, 158),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -195,26 +201,14 @@
             btnAddCollection.FlatAppearance.BorderSize = 0;
             btnAddCollection.Click += BtnAddCollection_Click;
 
-            btnEdit = new Button
-            {
-                Text = "✏️ Edit",
-                Font = new Font("Segoe UI", 10),
-                Size = new Size(100, 40),
-                Location = new Point(160, 0),
-                BackColor = Color.FromArgb(33, 150, 243),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-            btnEdit.FlatAppearance.BorderSize = 0;
-            btnEdit.Click += BtnEdit_Click;
+
 
             btnDelete = new Button
             {
                 Text = "🗑️ Delete",
                 Font = new Font("Segoe UI", 10),
                 Size = new Size(100, 40),
-                Location = new Point(270, 0),
+                Location = new Point(160, 0),
                 BackColor = Color.FromArgb(244, 67, 54),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -228,7 +222,7 @@
                 Text = "🔄 Refresh",
                 Font = new Font("Segoe UI", 10),
                 Size = new Size(100, 40),
-                Location = new Point(380, 0),
+                Location = new Point(270, 0),
                 BackColor = Color.FromArgb(121, 85, 72),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -237,7 +231,7 @@
             btnRefresh.FlatAppearance.BorderSize = 0;
             btnRefresh.Click += BtnRefresh_Click;
 
-            filterPanel.Controls.Add(lblDate);
+            filterPanel.Controls.Add(chkFilterDate);
             filterPanel.Controls.Add(dtpFilterDate);
             filterPanel.Controls.Add(lblSupplier);
             filterPanel.Controls.Add(cmbFilterSupplier);
@@ -247,7 +241,7 @@
             searchPanel.Controls.Add(btnSearch);
 
             actionPanel.Controls.Add(btnAddCollection);
-            actionPanel.Controls.Add(btnEdit);
+
             actionPanel.Controls.Add(btnDelete);
             actionPanel.Controls.Add(btnRefresh);
 
@@ -280,7 +274,8 @@
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                 RowHeadersVisible = false,
-                Font = new Font("Segoe UI", 10)
+                Font = new Font("Segoe UI", 10),
+                
             };
 
             // Style the grid
@@ -290,33 +285,44 @@
             collectionGrid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 11, FontStyle.Bold);
             collectionGrid.ColumnHeadersHeight = 40;
             collectionGrid.RowTemplate.Height = 35;
+            collectionGrid.CellDoubleClick += BtnEdit_Click;
+
+            // Context Menu
+            ContextMenuStrip contextMenu = new ContextMenuStrip();
+            ToolStripMenuItem deleteItem = new ToolStripMenuItem("Delete");
+            deleteItem.Click += BtnDelete_Click;
+            contextMenu.Items.Add(deleteItem);
+            collectionGrid.ContextMenuStrip = contextMenu;
 
             // Add columns
             collectionGrid.Columns.Add("CollectionID", "Collection ID");
             collectionGrid.Columns.Add("Supplier", "Supplier");
             collectionGrid.Columns.Add("Date", "Date");
             collectionGrid.Columns.Add("Weight", "Weight (kg)");
-            collectionGrid.Columns.Add("Rate", "Rate (₹)");
-            collectionGrid.Columns.Add("Transport", "Transport (₹)");
-            collectionGrid.Columns.Add("Total", "Total (₹)");
+            collectionGrid.Columns.Add("Transport", "Transport Added ");
             collectionGrid.Columns.Add("Notes", "Notes");
+            collectionGrid.Columns.Add("SupplierID", "Supplier ID");
 
             // Style columns
-            collectionGrid.Columns["CollectionID"].Width = 120;
-            collectionGrid.Columns["Date"].Width = 100;
+            collectionGrid.Columns["CollectionID"].Width = 20;
+            collectionGrid.Columns["Supplier"].Width = 50;
+            collectionGrid.Columns["Date"].Width = 50;
+            collectionGrid.Columns["Weight"].Width = 50;
+            collectionGrid.Columns["Transport"].Width = 50;
+            collectionGrid.Columns["Notes"].Width = 50;
             collectionGrid.Columns["Weight"].DefaultCellStyle.Format = "N2";
             collectionGrid.Columns["Weight"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-            collectionGrid.Columns["Rate"].DefaultCellStyle.Format = "N2";
-            collectionGrid.Columns["Rate"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+            collectionGrid.Columns["SupplierID"].Visible = false;
+            //collectionGrid.Columns["Rate"].DefaultCellStyle.Format = "N2";
+           // collectionGrid.Columns["Rate"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
             collectionGrid.Columns["Transport"].DefaultCellStyle.Format = "N2";
             collectionGrid.Columns["Transport"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-            collectionGrid.Columns["Total"].DefaultCellStyle.Format = "N2";
-            collectionGrid.Columns["Total"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-            collectionGrid.Columns["Total"].DefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
-            collectionGrid.Columns["Total"].DefaultCellStyle.ForeColor = Color.FromArgb(0, 150, 136);
+            //collectionGrid.Columns["Total"].DefaultCellStyle.Format = "N2";
+            //collectionGrid.Columns["Total"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+            //collectionGrid.Columns["Total"].DefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+            //collectionGrid.Columns["Total"].DefaultCellStyle.ForeColor = Color.FromArgb(0, 150, 136);
 
-            // Add sample data
-            LoadSampleData();
+         
 
             panel.Controls.Add(collectionGrid);
 

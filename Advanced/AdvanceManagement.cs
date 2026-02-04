@@ -1,4 +1,5 @@
-﻿using System;
+﻿using GangasiriTeaFactoryBilling.db;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -10,39 +11,40 @@ using System.Windows.Forms;
 
 namespace GangasiriTeaFactoryBilling.Advanced
 {
-    public partial class AdvanceManagement : Form
+    public partial class frmAdvanceManagement : Form
     {
-        public AdvanceManagement()
+        public frmAdvanceManagement()
         {
             InitializeComponent();
-            LoadSampleData();
+            
             LoadAdvances();
         }
 
-        private void LoadSampleData()
-        {
-            advancesGrid.Rows.Clear();
-            advancesGrid.Rows.Add("ADV-001", "S-001 - Kamal Perera", "2024-11-25", "5000.00", "Monthly advance", "✅ Active");
-            advancesGrid.Rows.Add("ADV-002", "S-002 - Sunil Fernando", "2024-11-24", "3000.00", "Emergency advance", "✅ Active");
-            advancesGrid.Rows.Add("ADV-003", "S-004 - Nimal Rathnayake", "2024-11-20", "7500.00", "Festival advance", "⚠️ Deducted");
-            advancesGrid.Rows.Add("ADV-004", "S-001 - Kamal Perera", "2024-11-18", "2500.00", "Weekly advance", "✅ Active");
-            advancesGrid.Rows.Add("ADV-005", "S-005 - Sampath Bandara", "2024-11-15", "4000.00", "Medical advance", "✅ Active");
-        }
+       
 
         private void LoadAdvances()
         {
             // TODO: Load advances from database
             // Sample data
             advancesGrid.Rows.Clear();
-            advancesGrid.Rows.Add(false, "ADV-001", "S-001 - Kamal Perera", "2024-11-25", "5000.00", "Monthly advance", "Active");
-            advancesGrid.Rows.Add(false, "ADV-002", "S-002 - Sunil Fernando", "2024-11-24", "3000.00", "Emergency advance", "Active");
-            advancesGrid.Rows.Add(false, "ADV-003", "S-004 - Nimal Rathnayake", "2024-11-20", "7500.00", "Festival advance", "Deducted");
+            try
+            {
+                var Advances = DataAccess.GetAllAdvances();
+                foreach (var item in Advances)
+                {
+                    advancesGrid.Rows.Add(item.AdvanceID, item.SupplierName, item.AdvanceDate, item.Amount, item.Description, item.Status);
+                }
+            }
+            catch
+            {
+                MessageBox.Show("Error In Loading Advance Data");
+            }
         }
 
         // Event Handlers
         private void BtnAddAdvance_Click(object sender, EventArgs e)
         {
-            using (frmAddAdvanced addForm = new frmAddAdvanced())
+            using (frmAddAddvanced addForm = new frmAddAddvanced())
             {
                 if (addForm.ShowDialog() == DialogResult.OK)
                 {
@@ -52,8 +54,8 @@ namespace GangasiriTeaFactoryBilling.Advanced
 
                     advancesGrid.Rows.Add(
                         newId,
-                        advanceData.Supplier,
-                        advanceData.Date.ToString("yyyy-MM-dd"),
+                        advanceData.SupplierName,
+                        advanceData.AdvanceDate.ToString("yyyy-MM-dd"),
                         advanceData.Amount.ToString("N2"),
                         advanceData.Description,
                         "✅ Active"
@@ -71,19 +73,25 @@ namespace GangasiriTeaFactoryBilling.Advanced
             {
                 DataGridViewRow selectedRow = advancesGrid.SelectedRows[0];
                 string advanceId = selectedRow.Cells["AdvanceID"].Value.ToString();
+                string supplier = selectedRow.Cells["Supplier"].Value.ToString();
+                DateTime date = Convert.ToDateTime(selectedRow.Cells["Date"].Value.ToString());
+                decimal amount = Convert.ToDecimal(selectedRow.Cells["Amount"].Value.ToString());
+                string description = selectedRow.Cells["Description"].Value.ToString();
 
-                using (frmAddAdvanced editForm = new frmAddAdvanced())
+                using (frmAddAddvanced editForm = new frmAddAddvanced())
                 {
                     // Pre-populate form with selected data
                     editForm.Text = "Edit Advance - " + advanceId;
+                    editForm.IsEditMode = true;
+                    editForm.AdvanceId = advanceId;
+                    editForm.LoadAdvanceData(supplier, date, amount, description);
 
-                    // TODO: Load advance data for editing
                     if (editForm.ShowDialog() == DialogResult.OK)
                     {
                         // Update row
                         var advanceData = editForm.Result;
-                        selectedRow.Cells["Supplier"].Value = advanceData.Supplier;
-                        selectedRow.Cells["Date"].Value = advanceData.Date.ToString("yyyy-MM-dd");
+                        selectedRow.Cells["Supplier"].Value = advanceData.SupplierName;
+                        selectedRow.Cells["Date"].Value = advanceData.AdvanceDate.ToString("yyyy-MM-dd");
                         selectedRow.Cells["Amount"].Value = advanceData.Amount.ToString("N2");
                         selectedRow.Cells["Description"].Value = advanceData.Description;
 
@@ -112,9 +120,18 @@ namespace GangasiriTeaFactoryBilling.Advanced
 
                 if (result == DialogResult.Yes)
                 {
-                    advancesGrid.Rows.Remove(selectedRow);
-                    MessageBox.Show("Advance deleted successfully!", "Success",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    // Call DataAccess to delete
+                    if (DataAccess.DeleteAdvance(int.Parse(advanceId)))
+                    {
+                         advancesGrid.Rows.Remove(selectedRow);
+                         MessageBox.Show("Advance deleted successfully!", "Success",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                         MessageBox.Show("Failed to delete advance.", "Error",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
             }
             else
@@ -128,7 +145,7 @@ namespace GangasiriTeaFactoryBilling.Advanced
         {
             txtSearch.Clear();
             advancesGrid.Rows.Clear();
-            LoadSampleData();
+            LoadAdvances();
             MessageBox.Show("Advances list refreshed!", "Refresh",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
